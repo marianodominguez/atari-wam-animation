@@ -1,0 +1,76 @@
+RDG12.SRC (RUN FROM ML)
+DRAW RIGHT-DOWN-GENTLE
+DX AND DY BOTH POS
+AND DX > DY
+
+MY OWN EQUATES
+E=$CF
+DX=$D0
+DY=$D1
+PIXZ=$DB
+PIXLO=$DC
+PIXHI=$DD
+BACK=$3F
+*=$600						CYCLES
+600 	A5D0  	LDA DX				3 
+602 	AA	TAX				2
+603 	E8  	INX				2
+604	4A	LSR A				2
+605	85CF	STA E				3
+607	A000	LDY #0				2				
+						14 cycles to initialize
+
+609	A5DB   LOOP LDA PIXZ			3
+60B	11DC	ORA (PIXLO),Y; OR WITH LOC	5
+60D	91DC  	STA (PIXLO),Y; LIGHT THE PIXEL	5
+60F	A5CF  	LDA E				3
+611	  18	CLC				2
+612	65D1	ADC DY				3
+614	85CF	STA E; E=E+DY			3
+616	  38 	SEC				2
+617	E5D0	SBC DX				3
+619	900D	BCC INCXPIXEL			2
+						31 cycles
+
+61B	85CF  	STA E; E=E-DX			3
+61D	  18   INCYPIXEL CLC			2
+61E  	A5DC	LDA PIXLO			3
+620	6914	ADC #20				2
+622	85DC	STA PIXLO			3
+624	9002	BCC INCXPIXEL			2
+626	E6DD	INC PIXHI			5
+						20 cycles
+
+628	  18   INCXPIXEL CLC			2
+629	66DB	ROR PIXZ			5
+62B	9008	BCC SAMEBYTE			2
+62D	66DB	ROR PIXZ			5
+62F	E6DC	INC PIXLO			5
+631	D002	BNE SAMEBYTE			2
+633	E6DD	INC PIXHI			5
+635	  CA   SAMEBYTE DEX			2
+636	D0D2	BNE LOOP			2
+						30 cycles
+
+						79 cycles (max) if INCYPIXEL
+						59 cycles (max) if NO INCYPIXEL
+
+638	6C3F00	JMP(BACK)			5 cycles to jump back
+						
+
+$600 through $63A (59 bytes)
+
+
+CYCLES
+Each line has 19 cycles (14 + 5) plus the time for each pixel
+
+Each pixel starts with a time of 31 cycles (LOOP section).
+
+The INCYPIXEL section has max time of 20 cycles, but only once in 256 cases.  Usually its time is 15 cycles.
+
+The INCXPIXEL section has max time of 30 cycles, but in 7 of 8 cases has only 13 cycles.  In the other 1 case of 8, in 255 cases of 256, it has only 25 cycles.
+
+Each pixel is 31 + 15 + 14.5 = 60.5 cycles.  Add maybe 1-1/2 cycles per pixel for line time.  Max time per pixel is 62 cycles!
+
+
+
